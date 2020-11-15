@@ -1,6 +1,7 @@
 import settings from './settings.json';
 
 const URL = settings.SERVER_URL;
+let roles = [];
 
 function handleHttpErrors(res) {
     if (!res.ok) {
@@ -9,32 +10,26 @@ function handleHttpErrors(res) {
     return res.json();
 }
 
+
+
 function apiFacade() {
-
-    const setToken = (token) => {
-        localStorage.setItem('jwtToken', token)
-    }
-    const getToken = () => {
-        return localStorage.getItem('jwtToken')
-    }
-    const loggedIn = () => {
-        const loggedIn = getToken() != null;
-        return loggedIn;
-    }
-    const logout = () => {
-        localStorage.removeItem("jwtToken");
-    }
-
 
     const login = (user, password) => {
         const options = makeOptions("POST", true, { username: user, password: password });
         return fetch(URL + "/api/login", options)
             .then(handleHttpErrors)
-            .then(res => { setToken(res.token) })
+            .then(res => {
+                setToken(res.token)
+                roles = res.roles;
+            })
+            .catch(error => console.log("An error occured! " + error))
     }
-    const fetchData = () => {
+
+    const fetchData = (role) => {
         const options = makeOptions("GET", true); //True add's the token
-        return fetch(URL + "/api/info/user", options).then(handleHttpErrors);
+        return fetch(URL + "/api/info/" + role, options)
+            .then(handleHttpErrors)
+            .catch(err => console.log(err))
     }
 
     const makeOptions = (method, addToken, body) => {
@@ -53,6 +48,28 @@ function apiFacade() {
         }
         return opts;
     }
+
+    const setToken = (token) => {
+        localStorage.setItem("jwtToken", token)
+    }
+
+    const getToken = () => {
+        return localStorage.getItem("jwtToken")
+    }
+
+    const loggedIn = () => {
+        const loggedIn = getToken() != null;
+        return loggedIn;
+    }
+
+    const logout = () => {
+        localStorage.removeItem("jwtToken");
+    }
+
+    const getRoles = () => {
+        return roles;
+    }
+
     return {
         makeOptions,
         setToken,
@@ -60,7 +77,8 @@ function apiFacade() {
         loggedIn,
         login,
         logout,
-        fetchData
+        fetchData,
+        getRoles
     }
 }
 const facade = apiFacade();
